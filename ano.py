@@ -46,15 +46,18 @@ def edit_rows(rows):
     for row in rows:
         add_gaussian_noise(row, 0.01)
 
-def write_rows(config):
+def write_rows(config, rows):
     fout = open(config['ano_file'],"w")
     for row in rows:
         writer = row.__str__() + '\n'
         fout.write(writer)
     fout.close()
 
-if __name__ == "__main__":
+def main():
     config = get_config()
     rows = get_rows(config)
     edit_rows(rows)
-    write_rows(config)
+    write_rows(config, rows)
+
+if __name__ == "__main__":
+    main()
