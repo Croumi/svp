@@ -12,7 +12,7 @@ class Row:
         pass
 
     def __str__(self):
-        return('\t'.join([row.user_id, str(row.date), row.lattitude, row.longitude]))
+        return('\t'.join([self.user_id, str(self.date), str(self.lattitude), str(self.longitude)]))
 
 def swap_coordinates(row1, row2):
     row1.lattitude, row2.lattitude = row2.lattitude, row1.lattitude
@@ -21,12 +21,12 @@ def swap_coordinates(row1, row2):
 def add_gaussian_noise(row, sigma):
     row.lattitude += random.gauss(0, sigma)
 
-if __name__ == "__main__":
-    config = get_config()
+def get_rows(config):
     fin = open(config['original_file'],"r")
-    fout = open(config['ano_file'],"w")
     reader = csv.reader(fin)
     original = list(reader)
+    fin.close()
+
     rows = []
     for data in original:
         row = Row()
@@ -37,13 +37,24 @@ if __name__ == "__main__":
         hour, min, sec = list(map(int,row_data[1][11:19].split(":")))
         row.date = datetime(year, month, day, hour, min, sec)
 
-        row.lattitude = row_data[2]
-        row.longitude = row_data[3]
+        row.lattitude = float(row_data[2])
+        row.longitude = float(row_data[3])
         rows.append(row)
+    return rows
 
+def edit_rows(rows):
     for row in rows:
-        writer = '\t'.join([row.user_id, str(row.date), row.lattitude, row.longitude]) + '\n'
-        fout.write(writer)
+        add_gaussian_noise(row, 0.01)
 
-    fin.close()
+def write_rows(config):
+    fout = open(config['ano_file'],"w")
+    for row in rows:
+        writer = row.__str__() + '\n'
+        fout.write(writer)
     fout.close()
+
+if __name__ == "__main__":
+    config = get_config()
+    rows = get_rows(config)
+    edit_rows(rows)
+    write_rows(config)
