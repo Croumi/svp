@@ -66,10 +66,12 @@ class NaiveAttack(Thread):
             self.score = score / size
 
         #Update the database
-        self.dbconn.cursor().execute(f"UPDATE anonymisation \
-                                       set status='Attaque naïve terminée' \
-                                       where fileLink='{self.anonym_file.split('/')[1]}'")
-        self.dbconn.commit()
+        #self.dbconn.cursor().execute(f"UPDATE anonymisation \
+        #                               set status='Attaque naïve terminée' \
+        #                               where fileLink='{self.anonym_file.split('/')[1]}'")
+        #self.dbconn.commit()
 
     def result(self):
         return self.score
+
+NaiveAttack("small.csv", "ano.csv")
