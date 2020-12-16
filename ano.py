@@ -90,7 +90,7 @@ class Database:
         return self.c.execute(query)
 
     def update(self, row_before, row_after):
-        self.conn.cursor().execute("UPDATE svp SET user_id = ?, year = ?, month = ?, day = ?, hour = ?, minute = ?, second = ?, lattitude = ?, longitude = ? WHERE user_id = ? AND year = ? AND month = ? AND day = ? AND hour = ? AND minute = ? AND second = ? AND lattitude = ? AND longitude = ?", row_after.get_values() + row_before.get_values())
+        self.conn.cursor().execute("UPDATE svp SET user_id = ?, year = ?, month = ?, day = ?, hour = ?, minute = ?, second = ?, lattitude = ?, longitude = ? WHERE user_id = ? AND year = ? AND month = ? AND day = ? AND hour = ? AND minute = ? AND second = ?", row_after.get_values() + row_before.get_values()[0:-2])
 
     def add_gaussian_noise(self, row, sigma):
         old_row = Row(*row)
@@ -98,6 +98,19 @@ class Database:
 
         new_row.lattitude += random.gauss(0, sigma)
         new_row.longitude += random.gauss(0, sigma)
+
+        self.update(old_row, new_row)
+
+    def add_random_noise_within_cell(self, row, cellsize):
+        old_row = Row(*row)
+        new_row = copy.deepcopy(old_row)
+
+        precision = 1
+        for _ in range(cellsize):
+            precision /= 10
+
+        new_row.lattitude = round(new_row.lattitude, cellsize) + random.random()*precision - precision/2
+        new_row.longitude = round(new_row.longitude, cellsize) + random.random()*precision - precision/2
 
         self.update(old_row, new_row)
 
@@ -115,10 +128,10 @@ class Database:
 
 def anonymise(db):
     for row in db.run_query('SELECT * FROM svp'):
-        db.add_gaussian_noise(row, 0.01)
+        db.add_random_noise_within_cell(row, 2)
 
     rows = db.run_query('SELECT * FROM svp LIMIT(2)').fetchall()
-    db.swap_coordinates(rows[0], rows[1])
+    #db.swap_coordinates(rows[0], rows[1])
 
 def run_utility_metrics(config):
     original_file = config['original_file']
