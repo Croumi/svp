@@ -1,6 +1,7 @@
 import csv
 import random
 from datetime import datetime
+from datetime import timedelta
 import yaml
 import sys
 sys.path.append('metrics')
@@ -12,126 +13,72 @@ import utility_meet
 import utility_POI
 import utility_POI_perWeek
 import utility_tuile
-import sqlite3
-import copy
+import os
+
+class Row:
+    def __init__(self, row_data):
+        self.user_id = row_data[0]
+        year, month, day = list(map(int,row_data[1][0:10].split("-")))
+        hour, min, sec = list(map(int,row_data[1][11:19].split(":")))
+        self.date = datetime(year, month, day, hour, min, sec)
+        self.lattitude = float(row_data[2])
+        self.longitude = float(row_data[3])
+
+    def __str__(self):
+        return('\t'.join([self.user_id, str(self.date), str(self.lattitude), str(self.longitude)]))
+
+    def write(self, config, fout):
+        writer = self.__str__() + '\n'
+        fout.write(writer)
+
+    def add_gaussian_noise(self, sigma):
+        self.lattitude += random.gauss(0, sigma)
+        self.longitude += random.gauss(0, sigma)
+
+    def add_random_noise_within_cell(self, cellsize = 2):
+        precision = 1
+        for _ in range(cellsize):
+            precision /= 10
+
+        self.lattitude = round(self.lattitude, cellsize) + 1.00005 * precision * (random.random() - 0.5)
+        self.longitude = round(self.longitude, cellsize) + 1.00005 * precision * (random.random() - 0.5)
+
+    #def add_random_noise_to_date(self):
+    #    if random.random() > 0.85:
+    #        self.date += timedelta(days = 1) * (random.randint(-1, 1))
+
+    def add_random_noise_to_hour(self):
+        night_start, night_end = 22, 6
+        work_start, work_end = 9, 16
+        if random.random() > 0.97:
+            new_hour = (self.date.hour + (random.randint(-1, 1)))%24
+            if self.date.hour > night_start or self.date.hour < night_end or (self.date.hour > work_start and self.date.hour < work_end):
+                self.date = self.date.replace(hour = new_hour)
+
+    def add_random_noise_to_min_sec(self):
+        self.date = self.date.replace(minute = random.randint(0, 59), second = random.randint(0, 59))
+    #def swap_coordinates(row):
+    #    self.lattitude, row.lattitude = row.lattitude, self.lattitude
+    #    self.longitude, row.longitude = row.longitude, self.longitude
+    #    return row
 
 def get_config():
     with open('config.yml') as f:
         return yaml.load(f, Loader=yaml.FullLoader)
 
-class Row:
-    def __init__(self, *args, **kwargs):
-        if len(args) == 9:
-            self.user_id = args[0]
-            self.date = datetime(int(args[1]), int(args[2]), int(args[3]), int(args[4]), int(args[5]), int(args[6]))
-            self.lattitude = args[7]
-            self.longitude = args[8]
+def init():
+    config = get_config()
+    if os.path.exists(config['ano_file']):
+      os.remove(config['ano_file'])
+    fin = open(config['original_file'],"r")
+    original = list(csv.reader(fin))
+    fin.close()
+    fout = open(config['ano_file'],"a")
+    return config, original, fout
 
-    def __str__(self):
-        return('\t'.join([self.user_id, str(self.date), str(self.lattitude), str(self.longitude)]))
-
-    def get_values(self):
-        return (self.user_id, self.date.year, self.date.month, self.date.day, self.date.hour, self.date.minute, self.date.second, self.lattitude, self.longitude)
-
-class Database:
-    def __init__(self, config):
-        self.config = config
-        self.conn = sqlite3.connect('svp.db')
-        self.c = self.conn.cursor()
-
-        self.c.execute('''SELECT name FROM sqlite_master WHERE type='table' AND name='svp';''')
-        if self.c.fetchone() == None:
-            self.c.execute('''CREATE TABLE svp (user_id, year, month, day, hour, minute, second, lattitude, longitude)''')
-            self.fill()
-
-    def fill(self):
-        fin = open(self.config['original_file'], "r")
-        reader = csv.reader(fin)
-        original = list(reader)
-        fin.close()
-
-        for data in original:
-            row = Row()
-            row_data = data[0].split("\t")
-            row.user_id = row_data[0]
-
-            year, month, day = list(map(int,row_data[1][0:10].split("-")))
-            hour, min, sec = list(map(int,row_data[1][11:19].split(":")))
-            row.date = datetime(year, month, day, hour, min, sec)
-
-            row.lattitude = float(row_data[2])
-            row.longitude = float(row_data[3])
-            self.c.execute("INSERT INTO svp VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (row.user_id, row.date.year, row.date.month, row.date.day, row.date.hour, row.date.minute, row.date.second, row.lattitude, row.longitude))
-        self.conn.commit()
-
-    def print(self):
-        for (index, row) in enumerate(self.c.execute('SELECT * FROM svp')):
-            print(index, row)
-
-    def write(self):
-        fout = open(self.config['ano_file'],"w")
-        for row in self.c.execute('SELECT * FROM svp'):
-            output_row = Row(*row)
-            writer = output_row.__str__() + '\n'
-            fout.write(writer)
-        fout.close()
-
-    def close(self):
-        self.conn.close()
-
-    def save(self):
-        self.conn.commit()
-
-    def get_number_of_rows(self):
-        self.c.execute('SELECT COUNT(*) from svp')
-        return self.c.fetchone()[0]
-
-    def run_query(self, query):
-        return self.c.execute(query)
-
-    def update(self, row_before, row_after):
-        self.conn.cursor().execute("UPDATE svp SET user_id = ?, year = ?, month = ?, day = ?, hour = ?, minute = ?, second = ?, lattitude = ?, longitude = ? WHERE user_id = ? AND year = ? AND month = ? AND day = ? AND hour = ? AND minute = ? AND second = ?", row_after.get_values() + row_before.get_values()[0:-2])
-
-    def add_gaussian_noise(self, row, sigma):
-        old_row = Row(*row)
-        new_row = copy.deepcopy(old_row)
-
-        new_row.lattitude += random.gauss(0, sigma)
-        new_row.longitude += random.gauss(0, sigma)
-
-        self.update(old_row, new_row)
-
-    def add_random_noise_within_cell(self, row, cellsize):
-        old_row = Row(*row)
-        new_row = copy.deepcopy(old_row)
-
-        precision = 1
-        for _ in range(cellsize):
-            precision /= 10
-
-        new_row.lattitude = round(new_row.lattitude, cellsize) + random.random()*precision - precision/2
-        new_row.longitude = round(new_row.longitude, cellsize) + random.random()*precision - precision/2
-
-        self.update(old_row, new_row)
-
-    def swap_coordinates(self, row1, row2):
-        old_row1 = Row(*row1)
-        new_row1 = copy.deepcopy(old_row1)
-        old_row2 = Row(*row2)
-        new_row2 = copy.deepcopy(old_row2)
-
-        new_row1.lattitude, new_row2.lattitude = old_row2.lattitude, old_row1.lattitude
-        new_row1.longitude, new_row2.longitude = old_row2.longitude, old_row1.longitude
-
-        self.update(old_row1, new_row1)
-        self.update(old_row2, new_row2)
-
-def anonymise(db):
-    for row in db.run_query('SELECT * FROM svp'):
-        db.add_random_noise_within_cell(row, 2)
-
-    rows = db.run_query('SELECT * FROM svp LIMIT(2)').fetchall()
-    #db.swap_coordinates(rows[0], rows[1])
+def end(config, fout):
+    fout.close()
+    run_utility_metrics(config)
 
 def run_utility_metrics(config):
     original_file = config['original_file']
@@ -149,11 +96,18 @@ def run_utility_metrics(config):
         print(metric.__name__ + " : " + str(getattr(metric, "main")(original_file, ano_file)))
 
 def main():
-    config = get_config()
-    db = Database(config)
-    anonymise(db)
-    db.write()
-    run_utility_metrics(config)
+    config, original, fout = init()
+
+    for (index, data) in enumerate(original):
+        row_data = data[0].split("\t")
+        row = Row(row_data)
+        row.add_random_noise_within_cell()
+        row.add_random_noise_to_hour()
+        row.add_random_noise_to_min_sec()
+        row.write(config, fout)
+        print("wrote row number {} : ({})".format(index, row))
+
+    end(config, fout)
 
 if __name__ == "__main__":
     main()
