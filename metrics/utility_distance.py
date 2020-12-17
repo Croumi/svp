@@ -29,7 +29,7 @@ def calcul_utility(diff):
 #################################
 #         Utiliy Function       #
 #################################
-def main(fd_anon_file, fd_nona_file, parameters={"dx":0.1}):
+def main(fd_anon_file, fd_nona_file, return_dict, parameters={"dx":0.1}):
     global dx
     dx = parameters['dx']
     #variables
@@ -54,4 +54,5 @@ def main(fd_anon_file, fd_nona_file, parameters={"dx":0.1}):
         else:
             line_utility += 0
     utility = line_utility / filesize
+    return_dict['utility_distance'] = utility
     return utility

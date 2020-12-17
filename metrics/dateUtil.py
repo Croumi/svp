@@ -11,7 +11,7 @@ from Utils import separator #Définir votre propre séparateur Ex: '\t', ' '
 #		1/3 de point est enlevé par jour d'écart
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
-def main(nona, anon, parameters={}): #Compute the utility in function of the date gap
+def main(nona, anon, return_dict, parameters={}): #Compute the utility in function of the date gap
     total = 0
     filesize = 0
     fd_nona_file = open(nona, "r")
@@ -38,4 +38,5 @@ def main(nona, anon, parameters={}): #Compute the utility in function of the dat
             else: return (-1, filesize)
         else: return (-1, filesize)
         total += max(0, score) if row2[0] != "DEL" else 0
+    return_dict['dateUtil'] = total / filesize
     return total / filesize

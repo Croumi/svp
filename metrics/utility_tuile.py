@@ -8,11 +8,11 @@ def dictstruc(): return defaultdict(int)
 
 #/\/\/\/\/\/\ Nom de la métrique: Déplacements effectués /\/\/\/\/\/\
 #Le but de cette métrique est de calculer la différence de zone de couverture d’un individu durant les 12 semaines d’étude.
-#L’idée est la suivante : la métrique permet de vérifier que, globalement, la version anonymisée garde les informations de déplacement et de couverture d’un individu. 
+#L’idée est la suivante : la métrique permet de vérifier que, globalement, la version anonymisée garde les informations de déplacement et de couverture d’un individu.
 #Pour ce faire on mesure le nombre de cellules différentes dans laquelle l’utilisateur a séjourné.
 #Le score est calculé de la manière suivante :
 
-#	Somme [pour chaque i individu] : 
+#	Somme [pour chaque i individu] :
 #		Si nb_cellule_fichier_original_pour_i > nb_cellule_fichier_anonyme_pour_i :
 #			nb_cellule_fichier_anonyme_pour_i / nb_cellule_fichier_original_pour_i
 #		Sinon :
@@ -30,19 +30,19 @@ size = 2
 #  0 : cellule à la région Française
 # -1 : cellule au pays
 
-def main(originalFile, anonymisedFile, parameters={"size":2}):
+def main(originalFile, anonymisedFile, return_dict, parameters={"size":2}):
 	global size
 	size = parameters['size']
-    
+
 	fd_original = open(originalFile, newline='')
 	fd_anonymised = open(anonymisedFile, newline='')
 	original_reader = csv.reader(fd_original, delimiter=separator)
 	anonymised_reader = csv.reader(fd_anonymised, delimiter=separator)
-	
+
 	tabOri = defaultdict(dictstruc)
 	tabAno = defaultdict(dictstruc)
 	for lineOri, lineAno in zip(original_reader, anonymised_reader):
-	
+
 		#--- Original file
 		id = lineOri[0]
 		gps1 = (round(float(lineOri[2]),size), round(float(lineOri[3]),size))
@@ -51,7 +51,7 @@ def main(originalFile, anonymisedFile, parameters={"size":2}):
 		key = (id)
 		#key = (id, calendar[0], calendar[1])
 		tabOri[key][gps1] += 1
-		
+
 		#--- Anonymisation file
 		if lineAno[0] != "DEL":
 			gps2 = (round(float(lineAno[2]),size), round(float(lineAno[3]),size))
@@ -62,7 +62,7 @@ def main(originalFile, anonymisedFile, parameters={"size":2}):
 	for id in tabOri:
 		final_tab_original[id] = len(tabOri[id])
 		final_tab_anonymised[id] = len(tabAno[id])
-	
+
 	total_size = len(final_tab_original)
 	score = 0
 	for id in final_tab_original:
@@ -70,5 +70,6 @@ def main(originalFile, anonymisedFile, parameters={"size":2}):
 			score += final_tab_anonymised[id] / final_tab_original[id]
 		else:
 			score += final_tab_original[id] / final_tab_anonymised[id]
-		
+
+	return_dict['utility_tuile'] = score/total_size
 	return score/total_size

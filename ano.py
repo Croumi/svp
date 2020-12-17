@@ -14,6 +14,7 @@ import utility_POI
 import utility_POI_perWeek
 import utility_tuile
 import os
+import multiprocessing
 
 class Row:
     def __init__(self, row_data):
@@ -57,6 +58,7 @@ class Row:
 
     def add_random_noise_to_min_sec(self):
         self.date = self.date.replace(minute = random.randint(0, 59), second = random.randint(0, 59))
+        
     #def swap_coordinates(row):
     #    self.lattitude, row.lattitude = row.lattitude, self.lattitude
     #    self.longitude, row.longitude = row.longitude, self.longitude
@@ -92,8 +94,24 @@ def run_utility_metrics(config):
         utility_POI_perWeek,
         utility_tuile
     ]
-    for metric in utility_metrics:
-        print(metric.__name__ + " : " + str(getattr(metric, "main")(original_file, ano_file)))
+
+    manager = multiprocessing.Manager()
+    return_dict = manager.dict()
+    jobs = []
+    for i in range(len(utility_metrics)):
+        p = multiprocessing.Process(target= utility_metrics[i].main, args=(original_file, ano_file, return_dict))
+        jobs.append(p)
+        p.start()
+
+    for proc in jobs:
+        proc.join()
+
+    for metric in return_dict.keys():
+        print("{} : {}".format(metric, return_dict[metric]))
+
+    values = list(map(float, return_dict.values()))
+    average = sum(values) / len(values)
+    print("average : {}".format(average))
 
 def main():
     config, original, fout = init()

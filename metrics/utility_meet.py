@@ -27,7 +27,7 @@ min_meet = 0
 # 0: tout est compté
 
 
-def main(originalFile, anonymisedFile, parameters={"size":2, "min_meet":0}):
+def main(originalFile, anonymisedFile, return_dict, parameters={"size":2, "min_meet":0}):
 	global size
 	size = parameters['size']
 	global min_meet
@@ -95,6 +95,7 @@ def main(originalFile, anonymisedFile, parameters={"size":2, "min_meet":0}):
 	#print("---- utility totale : "+str(utility) +"\n")
 	#print("Utilité: "+str(final_utility) +"\n")
 	#print("longueur:" +str(total_size)+"\n")
+	return_dict['utility_meet'] = final_utility
 	return final_utility
 
 #main("minimized_week.csv", "minimized_week_anonymised.csv")

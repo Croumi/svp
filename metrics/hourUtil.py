@@ -11,7 +11,7 @@ from Utils import separator #Définir votre propre séparateur Ex: '\t', ' '
 #	Une fraction de point est enlevée à chaque heure d'écart selon le tableau hourdec
 #/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\
 
-def main(nona, anon, parameters={}): #Compute the utility in function of the date gap
+def main(nona, anon, return_dict, parameters={}): #Compute the utility in function of the date gap
     total = 0
     filesize = 0
     # Set the amount linked to the hour gap
@@ -33,4 +33,5 @@ def main(nona, anon, parameters={}): #Compute the utility in function of the dat
             else: return (-1, filesize)
         else: return (-1, filesize)
         total += max(0, score) if row2[0] != "DEL" else 0
+    return_dict['hourUtil'] = total / filesize
     return total / filesize

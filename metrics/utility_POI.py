@@ -78,7 +78,7 @@ def diff_time(key, time1, last_date_tab):
         return difference
 
 
-def main(originalFile, anonymisedFile, parameters={"size":2,"nbPOI":3,"night_start":22,"night_end":6,"work_start":9,"work_end":16,"weekend_start":10,"weekend_end":18}):
+def main(originalFile, anonymisedFile, return_dict, parameters={"size":2,"nbPOI":3,"night_start":22,"night_end":6,"work_start":9,"work_end":16,"weekend_start":10,"weekend_end":18}):
 	global size
 	size = parameters['size']
 	global nbPOI
@@ -159,4 +159,5 @@ def main(originalFile, anonymisedFile, parameters={"size":2,"nbPOI":3,"night_sta
 				else:
 				    score += time_second_original / time_second_anonymised
 
+	return_dict['utility_POI'] = score/total_size
 	return score/total_size
