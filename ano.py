@@ -54,11 +54,60 @@ class Row:
         if random.random() > 0.97:
             new_hour = (self.date.hour + (random.randint(-1, 1)))%24
             if self.date.hour > night_start or self.date.hour < night_end or (self.date.hour > work_start and self.date.hour < work_end):
-                self.date = self.date.replace(hour = new_hour)
+                if abs(self.date.hour - new_hour) <= 1:
+                    self.date = self.date.replace(hour = new_hour)
 
     def add_random_noise_to_min_sec(self):
         self.date = self.date.replace(minute = random.randint(0, 59), second = random.randint(0, 59))
-        
+
+    def adapt_hour(self):
+        if random.random() > 0.8:
+            if self.date.weekday() < 5:
+                if 22 <= self.date.hour < 24:
+                    self.date = self.date.replace(hour = 23)
+                elif 0 <= self.date.hour < 2:
+                    self.date = self.date.replace(hour = 1)
+                elif 3 <= self.date.hour < 6:
+                    self.date = self.date.replace(hour = 5)
+                elif 6 <= self.date.hour < 9:
+                    self.date = self.date.replace(hour = 7)
+                elif 9 <= self.date.hour < 12:
+                    self.date = self.date.replace(hour = 10)
+                elif 12 <= self.date.hour < 14:
+                    self.date = self.date.replace(hour = 13)
+                elif 14 <= self.date.hour < 16:
+                    self.date = self.date.replace(hour = 15)
+                elif 16 <= self.date.hour < 19:
+                    self.date = self.date.replace(hour = 17)
+                elif 19 <= self.date.hour < 22:
+                    self.date = self.date.replace(hour = 20)
+            else :
+                if  0 <= self.date.hour < 4:
+                    self.date = self.date.replace(hour = 1)
+                elif  4 <= self.date.hour < 7:
+                    self.date = self.date.replace(hour = 5)
+                elif  7 <= self.date.hour < 10:
+                    self.date = self.date.replace(hour = 8)
+                elif 10 <= self.date.hour < 14:
+                    self.date = self.date.replace(hour = 12)
+                elif 14 <= self.date.hour < 18:
+                    self.date = self.date.replace(hour = 16)
+                elif 18 <= self.date.hour < 21:
+                    self.date = self.date.replace(hour = 19)
+                elif 21 <= self.date.hour < 24:
+                    self.date = self.date.replace(hour = 22)
+
+    def change_date(self):
+        if random.random() > 0.8:
+            if (self.date.weekday() == 0):
+                self.date = self.date + timedelta(days = 1)
+            elif (self.date.weekday() == 2):
+                self.date = self.date + timedelta(days = -1)
+            elif (self.date.weekday() == 3):
+                self.date = self.date + timedelta(days = 1)
+            elif (self.date.weekday() == 5):
+                self.date = self.date + timedelta(days = 1)
+
     #def swap_coordinates(row):
     #    self.lattitude, row.lattitude = row.lattitude, self.lattitude
     #    self.longitude, row.longitude = row.longitude, self.longitude
@@ -120,8 +169,10 @@ def main():
         row_data = data[0].split("\t")
         row = Row(row_data)
         row.add_random_noise_within_cell()
+        row.adapt_hour()
         row.add_random_noise_to_hour()
         row.add_random_noise_to_min_sec()
+        row.change_date()
         row.write(config, fout)
         print("wrote row number {} : ({})".format(index, row))
 
