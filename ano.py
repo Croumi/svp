@@ -16,6 +16,41 @@ import utility_tuile
 import os
 import multiprocessing
 
+class User:
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.dictOfLong = {}
+        self.dictOfLatt = {}
+        self.dictOfPOI = {}
+        self.occur = 0
+        self.coef_suppresion_row = random.randint(1,5)
+        
+    def __str__(self):
+        return('\t'.join([str(self.user_id), str(self.dictOfPOI), str(self.occur)]))
+
+    def addElement(self, row, mode, cellsize = 2 ):
+        long = str(round(row.longitude, cellsize))
+        lat = str(round(row.lattitude, cellsize))
+        couple = long +" "+ lat
+        if (couple in self.dictOfPOI and mode == 1):
+            if (self.dictOfPOI[couple] < (self.occur/self.coef_suppresion_row)):
+                self.dictOfPOI[couple] += 1
+            else :
+                row.user_id = "DEL"
+        else :
+            self.dictOfPOI[couple] = 1
+
+        if (long in self.dictOfLong and lat in self.dictOfLatt and mode == 0):
+            if (self.dictOfLong[long] < (self.occur/self.coef_suppresion_row) and self.dictOfLatt[lat] < (self.occur/self.coef_suppresion_row)):
+                self.dictOfLong[long] += 1
+                self.dictOfLatt[lat] += 1
+            else :
+                row.user_id = "DEL"
+        else :
+            self.dictOfLong[long] = 1
+            self.dictOfLatt[lat] = 1
+        self.occur += 1
+
 class Row:
     def __init__(self, row_data):
         self.user_id = row_data[0]
@@ -24,7 +59,7 @@ class Row:
         self.date = datetime(year, month, day, hour, min, sec)
         self.lattitude = float(row_data[2])
         self.longitude = float(row_data[3])
-        self.treshold = 0.999999999
+        self.treshold = 0.99
 
     def __str__(self):
         return('\t'.join([self.user_id, str(self.date), str(self.lattitude), str(self.longitude)]))
@@ -172,12 +207,22 @@ def run_utility_metrics(config):
     average = sum(values) / len(values)
     print("average : {}".format(average))
 
+def isolate_user(row, tabOfUser, tabOfUserId):
+    tabOfUser[(tabOfUserId.index(row.user_id))].addElement(row,1)
+
 def main():
     config, original, fout = init()
-
+    tabOfUserId = []
+    tabOfUser = []
     for (index, data) in enumerate(original):
         row_data = data[0].split("\t")
         row = Row(row_data)
+        if row.user_id not in tabOfUserId:
+            # print(row.user_id, " a été rajouté")
+            user = User(row.user_id)
+            tabOfUserId.append(str(row.user_id))
+            tabOfUser.append(user)
+        isolate_user(row, tabOfUser, tabOfUserId)
         row.add_random_noise_within_cell()
         row.adapt_hour()
         row.add_random_noise_to_hour()
