@@ -24,6 +24,7 @@ class Row:
         self.date = datetime(year, month, day, hour, min, sec)
         self.lattitude = float(row_data[2])
         self.longitude = float(row_data[3])
+        self.treshold = 0.999999999
 
     def __str__(self):
         return('\t'.join([self.user_id, str(self.date), str(self.lattitude), str(self.longitude)]))
@@ -51,54 +52,63 @@ class Row:
     def add_random_noise_to_hour(self):
         night_start, night_end = 22, 6
         work_start, work_end = 9, 16
-        if random.random() > 0.97:
+        if random.random() > self.treshold:
             new_hour = (self.date.hour + (random.randint(-1, 1)))%24
             if self.date.hour > night_start or self.date.hour < night_end or (self.date.hour > work_start and self.date.hour < work_end):
                 if abs(self.date.hour - new_hour) <= 1:
                     self.date = self.date.replace(hour = new_hour)
 
     def add_random_noise_to_min_sec(self):
-        self.date = self.date.replace(minute = random.randint(0, 59), second = random.randint(0, 59))
+        if random.random() > self.treshold:
+            #self.date = self.date.replace(minute = random.randint(0, 59), second = random.randint(0, 59))
+            self.date = self.date + timedelta(minutes = self.date.minute + random.randint(-1, 1), seconds = self.date.second + random.randint(-10, 10))
 
     def adapt_hour(self):
-        if random.random() > 0.8:
-            if self.date.weekday() < 5:
-                if 22 <= self.date.hour < 24:
+        if self.date.weekday() < 5:
+            if 22 <= self.date.hour < 24:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 23)
-                elif 0 <= self.date.hour < 2:
+            elif 0 <= self.date.hour < 2:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 1)
-                elif 3 <= self.date.hour < 6:
+            elif 3 <= self.date.hour < 6:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 5)
-                elif 6 <= self.date.hour < 9:
-                    self.date = self.date.replace(hour = 7)
-                elif 9 <= self.date.hour < 12:
+            elif 6 <= self.date.hour < 9:
+                self.date = self.date.replace(hour = 7)
+            elif 9 <= self.date.hour < 12:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 10)
-                elif 12 <= self.date.hour < 14:
+            elif 12 <= self.date.hour < 14:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 13)
-                elif 14 <= self.date.hour < 16:
+            elif 14 <= self.date.hour < 16:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 15)
-                elif 16 <= self.date.hour < 19:
-                    self.date = self.date.replace(hour = 17)
-                elif 19 <= self.date.hour < 22:
-                    self.date = self.date.replace(hour = 20)
-            else :
-                if  0 <= self.date.hour < 4:
-                    self.date = self.date.replace(hour = 1)
-                elif  4 <= self.date.hour < 7:
-                    self.date = self.date.replace(hour = 5)
-                elif  7 <= self.date.hour < 10:
-                    self.date = self.date.replace(hour = 8)
-                elif 10 <= self.date.hour < 14:
+            elif 16 <= self.date.hour < 19:
+                self.date = self.date.replace(hour = 17)
+            elif 19 <= self.date.hour < 22:
+                self.date = self.date.replace(hour = 20)
+        else :
+            if  0 <= self.date.hour < 4:
+                self.date = self.date.replace(hour = 1)
+            elif  4 <= self.date.hour < 7:
+                self.date = self.date.replace(hour = 5)
+            elif  7 <= self.date.hour < 10:
+                self.date = self.date.replace(hour = 8)
+            elif 10 <= self.date.hour < 14:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 12)
-                elif 14 <= self.date.hour < 18:
+            elif 14 <= self.date.hour < 18:
+                if random.random() > self.treshold:
                     self.date = self.date.replace(hour = 16)
-                elif 18 <= self.date.hour < 21:
-                    self.date = self.date.replace(hour = 19)
-                elif 21 <= self.date.hour < 24:
-                    self.date = self.date.replace(hour = 22)
+            elif 18 <= self.date.hour < 21:
+                self.date = self.date.replace(hour = 19)
+            elif 21 <= self.date.hour < 24:
+                self.date = self.date.replace(hour = 22)
 
     def change_date(self):
-        if random.random() > 0.8:
+        if random.random() > self.treshold:
             if (self.date.weekday() == 0):
                 self.date = self.date + timedelta(days = 1)
             elif (self.date.weekday() == 2):
@@ -174,8 +184,7 @@ def main():
         row.add_random_noise_to_min_sec()
         row.change_date()
         row.write(config, fout)
-        print("wrote row number {} : ({})".format(index, row))
-
+    print("Finished writing to file")
     end(config, fout)
 
 if __name__ == "__main__":
