@@ -23,7 +23,7 @@ class User:
         self.dictOfLatt = {}
         self.dictOfPOI = {}
         self.occur = 0
-        self.coef_suppresion_row = random.randint(1,5)
+        self.coef_suppresion_row = random.randint(2,5)
         
     def __str__(self):
         return('\t'.join([str(self.user_id), str(self.dictOfPOI), str(self.occur)]))
@@ -77,8 +77,8 @@ class Row:
         for _ in range(cellsize):
             precision /= 10
 
-        self.lattitude = round(self.lattitude, cellsize) + 1.00005 * precision * (random.random() - 0.5)
-        self.longitude = round(self.longitude, cellsize) + 1.00005 * precision * (random.random() - 0.5)
+        self.lattitude = round(self.lattitude, cellsize) + precision * (random.random() - 0.5)
+        self.longitude = round(self.longitude, cellsize) + precision * (random.random() - 0.5)
 
     #def add_random_noise_to_date(self):
     #    if random.random() > 0.85:
@@ -143,7 +143,7 @@ class Row:
                 self.date = self.date.replace(hour = 22)
 
     def change_date(self):
-        if random.random() > self.treshold:
+        if random.random() > 0.999:
             if (self.date.weekday() == 0):
                 self.date = self.date + timedelta(days = 1)
             elif (self.date.weekday() == 2):
